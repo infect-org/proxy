@@ -120,6 +120,8 @@ static_resources:
               socket_address:
                 address: guidelines.infect.internal
                 port_value: 8000
+    http2_protocol_options:
+      hpack_table_size: 4096
 
   - name: rda_cluster
     connect_timeout: 10s
