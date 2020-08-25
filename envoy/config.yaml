@@ -25,6 +25,38 @@ static_resources:
             name: local_route
             virtual_hosts:
 
+            # www redirect infect.info
+            - name: www_redirect_infect_info
+              domains: 
+                - www.infect.info
+              routes:
+              - match: 
+                  prefix: /
+                redirect:
+                  host_redirect: infect.info
+
+            # www redirect vet.infect.info
+            - name: www_redirect_vet_infect_info
+              domains: 
+                - www.vet.infect.info
+              routes:
+              - match: 
+                  prefix: /
+                redirect:
+                  host_redirect: vet.infect.info
+
+            # www redirect beta.infect.info
+            - name: www_redirect_beta_infect_info
+              domains: 
+                - www.beta.infect.info
+              routes:
+              - match: 
+                  prefix: /
+                redirect:
+                  host_redirect: beta.infect.info
+
+
+
             - name: frotend_cluster
               domains: 
                 - "*"
