@@ -1,0 +1,139 @@
+admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }
+
+static_resources:
+  listeners:
+
+
+  # new production application
+  - name: application
+    address:
+      socket_address: { address: 0.0.0.0, port_value: 80 }
+    filter_chains:
+    - filters:
+      - name: envoy.http_connection_manager
+        config:
+          stat_prefix: ingress_http
+          codec_type: AUTO
+          http_filters:
+          - name: envoy.router
+
+          route_config:
+            name: local_route
+            virtual_hosts:
+
+            - name: frotend_cluster
+              domains: 
+                - "*"
+              routes:
+
+              # health check
+              - match: 
+                  prefix: /health-check
+                direct_response: 
+                  status: 200
+
+              # redirect to ssl
+              - match: 
+                  prefix: /
+                  headers: 
+                  - name: x-forwarded-proto
+                    regex_match: "^http$"
+                redirect:
+                  https_redirect: true
+
+              # frontend
+              - match:
+                  prefix: /
+                route:  
+                  cluster: frontend_cluster
+
+
+            - name: API_cluster
+              domains: 
+                - "api.*"
+              routes:
+
+              # redirect to ssl
+              - match: 
+                  prefix: /
+                  headers: 
+                  - name: x-forwarded-proto
+                    regex_match: "^http$"
+                redirect:
+                  https_redirect: true
+
+              # guidelines
+              - match:
+                  prefix: /guideline
+                route:  
+                  cluster: guideline_cluster
+
+              # tenant
+              - match:
+                  prefix: /tenant
+                route:  
+                  cluster: guideline_cluster
+
+              # rda
+              - match:
+                  prefix: /
+                route:  
+                  cluster: rda_cluster
+
+
+
+
+  clusters:
+  - name: frontend_cluster
+    connect_timeout: 10s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: frontend_cluster
+      common_http_protocol_options:
+        idle_timeout: 30s
+        max_connection_duration: 30s
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: frontend.infect.internal
+                port_value: 80
+
+  - name: guideline_cluster
+    connect_timeout: 10s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: guideline_cluster
+      common_http_protocol_options:
+        idle_timeout: 30s
+        max_connection_duration: 30s
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: guidelines.infect.internal
+                port_value: 80
+
+  - name: rda_cluster
+    connect_timeout: 10s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: rda_cluster
+      common_http_protocol_options:
+        idle_timeout: 30s
+        max_connection_duration: 30s
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: rda.infect.internal
+                port_value: 80

@@ -1,0 +1,13 @@
+[Service]
+ExecStart=/home/ubuntu/apps/proxy/envoy/envoy -c config.yaml
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=rda
+User=root
+Group=root
+
+WorkingDirectory=/home/ubuntu/apps/envoy
+
+[Install]
+WantedBy=multi-user.target
