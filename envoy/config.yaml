@@ -16,6 +16,7 @@ static_resources:
       - name: envoy.http_connection_manager
         config:
           stat_prefix: ingress_http
+          xff_num_trusted_hops: 1
           codec_type: AUTO
           http_filters:
           - name: envoy.router
