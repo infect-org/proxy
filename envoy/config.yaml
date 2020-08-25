@@ -31,7 +31,7 @@ static_resources:
 
               # health check
               - match: 
-                  prefix: /health-check
+                  prefix: /health
                 direct_response: 
                   status: 200
 
