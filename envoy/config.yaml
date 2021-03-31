@@ -1,5 +1,5 @@
 admin:
-  access_log_path: /home/ubuntu/admin_access.log
+  access_log_path: /home/lina/admin_access.log
   address:
     socket_address: { address: 0.0.0.0, port_value: 9901 }
 
@@ -15,15 +15,15 @@ static_resources:
     - filters:
       - name: envoy.http_connection_manager
         config:          
-          access_log:
-            name: envoy.file_access_log
-            config:
-              path: /home/ubuntu/access.log
-              format: >
-                [%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%"
-                %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION%
-                %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%"
-                "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%" "%UPSTREAM_CLUSTER%"\n
+          # access_log:
+          #   name: envoy.file_access_log
+          #   config:
+          #     path: /home/ubuntu/access.log
+          #     format: >
+          #       [%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%"
+          #       %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION%
+          #       %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%"
+          #       "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%" "%UPSTREAM_CLUSTER%"\n
           stat_prefix: ingress_http
           xff_num_trusted_hops: 1
           codec_type: AUTO
@@ -66,9 +66,35 @@ static_resources:
 
 
 
-            - name: frotend_cluster
+
+            - name: health
               domains: 
                 - "*"
+              routes:
+
+              # health check
+              - match: 
+                  prefix: /health
+                direct_response: 
+                  status: 200
+
+              # redirect to ssl
+              - match: 
+                  prefix: /
+                  headers: 
+                  - name: x-forwarded-proto
+                    regex_match: "^http$"
+                redirect:
+                  https_redirect: true
+
+
+
+            - name: frotend_cluster
+              domains: 
+                - "infect.info"
+                - "vet.infect.info"
+                - "infect.org"
+                - "vet.infect.org"
               routes:
 
               # health check
@@ -93,12 +119,44 @@ static_resources:
                   cluster: frontend_cluster
 
 
+
+            - name: frotend_cluster_beta
+              domains: 
+                - "beta.infect.info"
+                - "beta.vet.infect.info"
+                - "beta.infect.org"
+                - "beta.vet.infect.org"
+              routes:
+
+              # health check
+              - match: 
+                  prefix: /health
+                direct_response: 
+                  status: 200
+
+              # redirect to ssl
+              - match: 
+                  prefix: /
+                  headers: 
+                  - name: x-forwarded-proto
+                    regex_match: "^http$"
+                redirect:
+                  https_redirect: true
+
+              # frontend
+              - match:
+                  prefix: /
+                route:  
+                  cluster: frontend_beta_cluster
+
+
+
             - name: API_cluster
               domains: 
-                - "api.*"
-                - "beta.api.infect.info"
-                - "api.rda.infect.info"
-                - "rda.infect.info"
+                - "api.infect.info"
+                - "api.vet.infect.info"
+                - "api.infect.org"
+                - "api.vet.infect.org"
               routes:
 
               # redirect to ssl
@@ -127,6 +185,44 @@ static_resources:
                   prefix: /
                 route:  
                   cluster: rda_cluster
+
+
+
+
+            - name: API_cluster_beta
+              domains: 
+                - "beta.api.infect.info"
+                - "beta.api.vet.infect.info"
+                - "beta.api.infect.org"
+                - "beta.api.vet.infect.org"
+              routes:
+
+              # redirect to ssl
+              - match: 
+                  prefix: /
+                  headers: 
+                  - name: x-forwarded-proto
+                    regex_match: "^http$"
+                redirect:
+                  https_redirect: true
+
+              # guidelines
+              - match:
+                  prefix: /guideline
+                route:  
+                  cluster: guideline_cluster
+
+              # tenant
+              - match:
+                  prefix: /tenant
+                route:  
+                  cluster: guideline_cluster
+
+              # rda
+              - match:
+                  prefix: /
+                route:  
+                  cluster: rda_beta_cluster
 
 
 
@@ -183,4 +279,38 @@ static_resources:
             address:
               socket_address:
                 address: rda.infect.internal
+                port_value: 80
+
+  - name: rda_beta_cluster
+    connect_timeout: 10s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: rda_beta_cluster
+      common_http_protocol_options:
+        idle_timeout: 30s
+        max_connection_duration: 30s
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: integration.rda.infect.internal
+                port_value: 80
+
+  - name: frontend_beta_cluster
+    connect_timeout: 10s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: frontend_beta_cluster
+      common_http_protocol_options:
+        idle_timeout: 30s
+        max_connection_duration: 30s
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: integration.frontend.infect.internal
                 port_value: 80
