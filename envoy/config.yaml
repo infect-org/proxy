@@ -192,9 +192,9 @@ static_resources:
             - name: API_cluster_beta
               domains: 
                 - "beta.api.infect.info"
-                - "beta.api.vet.infect.info"
+                - "api.beta.vet.infect.info"
                 - "beta.api.infect.org"
-                - "beta.api.vet.infect.org"
+                - "api.beta.vet.infect.org"
               routes:
 
               # redirect to ssl
